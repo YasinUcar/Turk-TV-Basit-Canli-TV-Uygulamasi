@@ -1,9 +1,0 @@
-[Desktop Entry]
-Name=Türk TV
-Comment=Canlı TV
-Exec=/usr/bin/turk-tv
-Icon=turk-tv
-Terminal=false
-Type=Application
-Categories=AudioVideo;Video;TV;
-StartupWMClass=Turk TV
