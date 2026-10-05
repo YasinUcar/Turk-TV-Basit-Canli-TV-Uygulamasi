@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8"><title>Türk TV</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;font-family:Segoe UI,Ubuntu,Arial,sans-serif;background:#111;color:#fff}
+body{display:flex}
+#side{width:350px;background:#1b1f27;display:flex;flex-direction:column}
+#side h1{margin:0;padding:18px 20px;font-size:26px;background:#c8102e}
+#list{overflow-y:auto;flex:1}
+.gh{padding:10px 20px;background:#0f1218;color:#8a93a3;font-size:15px;letter-spacing:1px;text-transform:uppercase;position:sticky;top:0}
+.ch{display:flex;gap:12px;align-items:center;width:100%;padding:8px 14px;font-size:21px;color:#fff;background:none;border:0;border-bottom:1px solid #2a303b;text-align:left;cursor:pointer;font-family:inherit}
+.ch .no{width:30px;color:#8a93a3;font-size:16px;text-align:right}
+.lg{width:56px;height:40px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden;color:#333;font-weight:700;font-size:17px}
+.lg img{max-width:100%;max-height:100%;object-fit:contain;padding:3px}
+.ch:hover{background:#262c37}.ch.on{background:#1565d8}.ch.on .no{color:#fff}
+#main{flex:1;position:relative;background:#000}
+video{width:100%;height:100%;object-fit:contain;background:#000}
+#msg{position:absolute;inset:0;display:flex;flex-direction:column;gap:16px;align-items:center;justify-content:center;font-size:30px;text-align:center;pointer-events:none}
+#msg button{pointer-events:auto;font-size:24px;padding:12px 28px;border:0;border-radius:8px;background:#1565d8;color:#fff;cursor:pointer}
+</style></head><body>
+<div id="side"><h1>📺 Türk TV</h1><div id="list"></div></div>
+<div id="main"><video id="v" controls autoplay></video><div id="msg"></div></div>
+<script src="hls.min.js"></script><script src="channels.js"></script>
+<script>
+const v=document.getElementById('v'),m=document.getElementById('msg'),L=document.getElementById('list'),B=[];
+let hls,cur=-1,g='';
+CHANNELS.forEach((c,i)=>{
+  if(c.g!==g){g=c.g;const h=document.createElement('div');h.className='gh';h.textContent=g;L.appendChild(h)}
+  const b=document.createElement('button');b.className='ch';
+  b.innerHTML='<span class="no">'+(i+1)+'</span><span class="lg"></span><span></span>';
+  b.lastChild.textContent=c.n;
+  const box=b.querySelector('.lg'),ini=c.n.replace(/[^\p{L}\p{N} ]/gu,'').split(' ').map(w=>w[0]).join('').slice(0,3);
+  if(c.l){const im=new Image();im.src=c.l;im.onerror=()=>{box.textContent=ini};box.appendChild(im)}else box.textContent=ini;
+  b.onclick=()=>play(i);L.appendChild(b);B.push(b);
+});
+function say(t){m.innerHTML=t}
+function play(i){
+  cur=i;try{localStorage.setItem('last',i)}catch(e){}
+  B.forEach((b,j)=>b.classList.toggle('on',j===i));
+  B[i].scrollIntoView({block:'nearest'});
+  say('Yükleniyor…');
+  if(hls){hls.destroy();hls=null}
+  hls=new Hls();
+  hls.loadSource(CHANNELS[i].u);hls.attachMedia(v);
+  hls.on(Hls.Events.MANIFEST_PARSED,()=>v.play().catch(()=>{}));
+  hls.on(Hls.Events.ERROR,(e,d)=>{if(d.fatal&&i===cur)say('Bu kanal şu an açılamıyor.<button onclick="play(cur)">Tekrar dene</button>')});
+}
+v.addEventListener('playing',()=>say(''));
+v.addEventListener('dblclick',()=>document.fullscreenElement?document.exitFullscreen():v.requestFullscreen());
+document.addEventListener('keydown',e=>{
+  const n=CHANNELS.length;
+  if(e.key==='ArrowDown'){e.preventDefault();play((cur+1)%n)}
+  if(e.key==='ArrowUp'){e.preventDefault();play((cur-1+n)%n)}
+  if(e.key==='f'||e.key==='F')v.dispatchEvent(new Event('dblclick'));
+});
+let last=0;try{last=+localStorage.getItem('last')||0}catch(e){}
+play(Math.min(last,CHANNELS.length-1));
+</script></body></html>
